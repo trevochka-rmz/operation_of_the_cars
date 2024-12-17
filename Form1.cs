@@ -5,6 +5,12 @@ using System.Data;
 using System.Data.SqlClient;
 using System.Drawing;
 using System.Windows.Forms;
+using System.IO;
+using OfficeOpenXml; // EPPlus namespace
+using System.Data;
+using Excel = Microsoft.Office.Interop.Excel;
+using System.Linq;
+using System.Runtime.Serialization.Formatters.Binary;
 
 namespace Labss
 {
@@ -17,6 +23,8 @@ namespace Labss
             InitializeComponent();
             InitializeDatabase();
             InitializeUI();
+            menuExportDatabaseToXml.Click += MenuExportDatabaseToXml_Click;
+            menuImportDatabaseFromXml.Click += MenuImportDatabaseFromXml_Click;
 
         }
 
@@ -247,6 +255,24 @@ namespace Labss
                     LoadInsurance(carId);
                     LoadMaintenance(carId);
                     LoadFueling(carId);
+                }
+                // Проверяем, есть ли фото в столбце "Фото"
+                if (selectedRow.Cells["Фото"] != null && selectedRow.Cells["Фото"].Value != null)
+                {
+                    string filePath = selectedRow.Cells["Фото"].Value.ToString();
+
+                    if (System.IO.File.Exists(filePath)) // Проверяем, существует ли файл
+                    {
+                        pictureBoxPhoto.Image = Image.FromFile(filePath); // Отображаем фото
+                    }
+                    else
+                    {
+                        pictureBoxPhoto.Image = null; // Если файла нет, очищаем PictureBox
+                    }
+                }
+                else
+                {
+                    pictureBoxPhoto.Image = null; // Если столбец пуст, очищаем PictureBox
                 }
             }
         }
@@ -488,6 +514,350 @@ namespace Labss
                 MessageBox.Show("Выберите таблицу для удаления записи.");
             }
         }
+       
+
+        private void ExportToExcel()
+         {
+            try
+            {
+                // Создаем приложение Excel
+                Excel.Application excelApp = new Excel.Application
+                {
+                    Visible = true // Выставляем true, чтобы показать Excel после экспорта
+                };
+
+                // Создаем новую книгу
+                Excel.Workbook workbook = excelApp.Workbooks.Add();
+
+                // Перебираем каждую таблицу в ListBox
+                for (int i = 0; i < listBoxTables.Items.Count; i++)
+                {
+                    string tableName = listBoxTables.Items[i].ToString();
+
+                    // Добавляем новый лист для каждой таблицы
+                    Excel.Worksheet worksheet = workbook.Sheets.Add();
+                    worksheet.Name = tableName;
+
+                    // Получаем данные из выбранной таблицы
+                    DataTable dataTable = GetTableDataExport(tableName);
+
+                    if (dataTable == null) continue;
+
+                    // Заголовки столбцов
+                    for (int col = 0; col < dataTable.Columns.Count; col++)
+                    {
+                        worksheet.Cells[1, col + 1] = dataTable.Columns[col].ColumnName; // Заголовок столбца
+                    }
+
+                    // Данные строк
+                    for (int row = 0; row < dataTable.Rows.Count; row++)
+                    {
+                        for (int col = 0; col < dataTable.Columns.Count; col++)
+                        {
+                            worksheet.Cells[row + 2, col + 1] = dataTable.Rows[row][col]; // Ячейка данных
+                        }
+                    }
+                }
+
+                // Сообщение об успехе
+                MessageBox.Show("Экспорт завершен успешно!", "Экспорт в Excel", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка при экспорте: {ex.Message}", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+    }
+
+    private DataTable GetTableDataExport(string tableName)
+        {
+            try
+            {
+                // Настраиваем подключение к базе данных
+                string connectionString = "Server=localhost\\SQLEXPRESS;Database=Car_maintenance_costs;Trusted_Connection=True;";
+                using (SqlConnection connection = new SqlConnection(connectionString))
+                {
+                    connection.Open();
+
+                    // SQL-запрос для получения всех данных таблицы
+                    string query = $"SELECT * FROM {tableName}";
+                    SqlDataAdapter adapter = new SqlDataAdapter(query, connection);
+
+                    // Наполняем DataTable данными
+                    DataTable dataTable = new DataTable();
+                    adapter.Fill(dataTable);
+
+                    return dataTable;
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка при получении данных таблицы {tableName}: {ex.Message}", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return null;
+            }
+        }
+        private void ExportDatabaseToXml(string filePath)
+        {
+            try
+            {
+                DataSet dataSet = new DataSet("Database"); // Создаем DataSet для хранения всех таблиц
+
+                // Список таблиц в базе данных
+                List<string> tableNames = new List<string> { "Автомобили", "Виды_расходов", "Затраты", "Прочие_расходы", "Страхование", "Техническое_обслуживание", "Топливо" }; 
+                foreach (string tableName in tableNames)
+                {
+                    DataTable tableData = GetTableDataExport(tableName); // Получаем данные таблицы
+                    if (tableData != null)
+                    {
+                        tableData.TableName = tableName; // Устанавливаем имя таблицы
+                        dataSet.Tables.Add(tableData.Copy()); // Копируем данные в DataSet
+                    }
+                }
+
+                // Сохраняем DataSet в XML-файл
+                dataSet.WriteXml(filePath, XmlWriteMode.WriteSchema);
+
+                MessageBox.Show("База данных успешно экспортирована в XML!", "Экспорт завершен", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка при экспорте базы данных: {ex.Message}", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+        private void ImportDatabaseFromXml(string filePath)
+        {
+            try
+            {
+                DataSet dataSet = new DataSet();
+                dataSet.ReadXml(filePath); // Читаем данные из XML-файла
+
+                // Настраиваем подключение к базе данных
+                string connectionString = "Server=localhost\\SQLEXPRESS;Database=Car_maintenance_costs;Trusted_Connection=True;";
+                using (SqlConnection connection = new SqlConnection(connectionString))
+                {
+                    connection.Open();
+
+                    foreach (DataTable table in dataSet.Tables)
+                    {
+                        string tableName = table.TableName; // Имя таблицы
+                        if (table.Rows.Count > 0)
+                        {
+                            // Удаляем старые данные из таблицы (опционально)
+                            SqlCommand deleteCommand = new SqlCommand($"DELETE FROM {tableName}", connection);
+                            deleteCommand.ExecuteNonQuery();
+
+                            // Записываем новые данные
+                            foreach (DataRow row in table.Rows)
+                            {
+                                // Генерация команды INSERT
+                                string columnNames = string.Join(", ", table.Columns.Cast<DataColumn>().Select(c => c.ColumnName));
+                                string values = string.Join(", ", table.Columns.Cast<DataColumn>().Select(c => $"@{c.ColumnName}"));
+                                string query = $"INSERT INTO {tableName} ({columnNames}) VALUES ({values})";
+
+                                SqlCommand insertCommand = new SqlCommand(query, connection);
+
+                                foreach (DataColumn column in table.Columns)
+                                {
+                                    insertCommand.Parameters.AddWithValue($"@{column.ColumnName}", row[column.ColumnName] ?? DBNull.Value);
+                                }
+
+                                insertCommand.ExecuteNonQuery();
+                            }
+                        }
+                    }
+                }
+
+                MessageBox.Show("База данных успешно импортирована из XML!", "Импорт завершен", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка при импорте базы данных: {ex.Message}", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void MenuExportDatabaseToXml_Click(object sender, EventArgs e)
+        {
+            SaveFileDialog saveFileDialog = new SaveFileDialog
+            {
+                Filter = "XML файлы (*.xml)|*.xml",
+                Title = "Сохранить базу данных как XML"
+            };
+
+            if (saveFileDialog.ShowDialog() == DialogResult.OK)
+            {
+                ExportDatabaseToXml(saveFileDialog.FileName);
+            }
+        }
+
+        private void MenuImportDatabaseFromXml_Click(object sender, EventArgs e)
+        {
+            OpenFileDialog openFileDialog = new OpenFileDialog
+            {
+                Filter = "XML файлы (*.xml)|*.xml",
+                Title = "Открыть XML с базой данных"
+            };
+
+            if (openFileDialog.ShowDialog() == DialogResult.OK)
+            {
+                ImportDatabaseFromXml(openFileDialog.FileName);
+            }
+        }
+
+
+        private void buttonExportToExcel_Click(object sender, EventArgs e)
+        {
+            ExportToExcel();
+        }
+
+        private void SaveProject(string filePath)
+        {
+            try
+            {
+                // Создаем объект ProjectData для сохранения данных
+                ProjectData data = new ProjectData
+                {
+                    TableNames = listBoxTables.Items.Cast<string>().ToList(),
+                    SelectedTable = listBoxTables.SelectedItem?.ToString(),
+                    ConnectionString = "Server=localhost\\SQLEXPRESS;Database=Car_maintenance_costs;Trusted_Connection=True;"
+                };
+
+                // Сериализация данных в файл
+                using (FileStream fs = new FileStream(filePath, FileMode.Create))
+                {
+                    BinaryFormatter formatter = new BinaryFormatter();
+                    formatter.Serialize(fs, data);
+                }
+
+                MessageBox.Show("Проект успешно сохранен!", "Сохранение проекта", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка при сохранении проекта: {ex.Message}", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+        private void OpenProject(string filePath)
+        {
+            try
+            {
+                // Десериализация данных из файла
+                using (FileStream fs = new FileStream(filePath, FileMode.Open))
+                {
+                    BinaryFormatter formatter = new BinaryFormatter();
+                    ProjectData data = (ProjectData)formatter.Deserialize(fs);
+
+                    // Восстановление данных в приложении
+                    listBoxTables.Items.Clear();
+                    foreach (var table in data.TableNames)
+                    {
+                        listBoxTables.Items.Add(table);
+                    }
+
+                    if (data.SelectedTable != null && listBoxTables.Items.Contains(data.SelectedTable))
+                    {
+                        listBoxTables.SelectedItem = data.SelectedTable;
+                    }
+
+       
+
+                    MessageBox.Show("Проект успешно загружен!", "Открытие проекта", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка при открытии проекта: {ex.Message}", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+        private void saveToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            using (SaveFileDialog saveFileDialog = new SaveFileDialog())
+            {
+                saveFileDialog.Filter = "Project Files (*.proj)|*.proj";
+                saveFileDialog.DefaultExt = "proj";
+
+                if (saveFileDialog.ShowDialog() == DialogResult.OK)
+                {
+                    SaveProject(saveFileDialog.FileName);
+                }
+            }
+        }
+        private void openToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            using (OpenFileDialog openFileDialog = new OpenFileDialog())
+            {
+                openFileDialog.Filter = "Project Files (*.proj)|*.proj";
+
+                if (openFileDialog.ShowDialog() == DialogResult.OK)
+                {
+                    OpenProject(openFileDialog.FileName);
+                }
+            }
+        }
+        private void menuAddPhoto_Click(object sender, EventArgs e)
+        {
+            // Открываем диалог для выбора фото
+            OpenFileDialog openFileDialog = new OpenFileDialog();
+            openFileDialog.Filter = "Изображения|*.jpg;*.jpeg;*.png;*.bmp";
+
+            if (openFileDialog.ShowDialog() == DialogResult.OK)
+            {
+                string filePath = openFileDialog.FileName; // Полный путь к выбранному файлу
+
+                // Отображаем фото в PictureBox
+                pictureBoxPhoto.Image = Image.FromFile(filePath);
+
+                // Проверяем, есть ли столбец "Фото" в таблице
+                if (!dataGridView.Columns.Contains("Фото"))
+                {
+                    dataGridView.Columns.Add("Фото", "Фото");
+                }
+
+                // Обновляем фото в выбранной строке
+                if (dataGridView.SelectedRows.Count > 0)
+                {
+                    foreach (DataGridViewRow row in dataGridView.SelectedRows)
+                    {
+                        // Обновляем значение ячейки "Фото"
+                        row.Cells["Фото"].Value = filePath;
+
+                      
+                        UpdatePhotoInDatabase(row.Index, filePath); // Передаем индекс строки и путь
+                    }
+                }
+                else
+                {
+                    MessageBox.Show("Пожалуйста, выберите строку для добавления фото.", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+            }
+        }
+        private void UpdatePhotoInDatabase(int rowIndex, string photoPath)
+        {
+            try
+            {
+                // Получаем ID или уникальный ключ строки из базы данных (предположим, в первом столбце)
+                var id = dataGridView.Rows[rowIndex].Cells[0].Value;
+
+                // SQL-команда для обновления значения в базе данных
+                string query = "UPDATE Автомобили SET Фото = @PhotoPath WHERE ID_Автомобиля = @Id";
+
+                using (SqlConnection connection = new SqlConnection("Server=localhost\\SQLEXPRESS;Database=Car_maintenance_costs;Trusted_Connection=True;"))
+                {
+                    connection.Open();
+                    using (SqlCommand command = new SqlCommand(query, connection))
+                    {
+                        command.Parameters.AddWithValue("@PhotoPath", photoPath);
+                        command.Parameters.AddWithValue("@Id", id);
+
+                        command.ExecuteNonQuery(); // Выполняем команду
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка при обновлении базы данных: {ex.Message}", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+
 
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {

@@ -22,6 +22,8 @@ namespace Labss
             base.Dispose(disposing);
         }
         private System.Windows.Forms.ListBox listBoxTables;
+        private System.Windows.Forms.ToolStripMenuItem menuAddPhoto;
+        private System.Windows.Forms.PictureBox pictureBoxPhoto;
         private System.Windows.Forms.ListBox listBoxCosts;
         private System.Windows.Forms.ListBox listBoxMiscellaneous;
         #region Windows Form Designer generated code
@@ -35,6 +37,12 @@ namespace Labss
         private System.Windows.Forms.Button buttonUpdate;
         private System.Windows.Forms.MenuStrip menuStrip;
         private System.Windows.Forms.ToolStripMenuItem menuTables;
+        private System.Windows.Forms.ToolStripMenuItem menuExportDatabaseToXml;
+        private System.Windows.Forms.ToolStripMenuItem menuImportDatabaseFromXml;
+        private System.Windows.Forms.ToolStripMenuItem menuFile;
+
+        private System.Windows.Forms.ToolStripMenuItem menuSaveProject;
+        private System.Windows.Forms.ToolStripMenuItem menuOpenProject;
 
         /// <summary>
         /// Required method for Designer support - do not modify
@@ -44,6 +52,10 @@ namespace Labss
         {
             this.components = new System.ComponentModel.Container();
             this.dataGridView = new System.Windows.Forms.DataGridView();
+            this.menuAddPhoto = new System.Windows.Forms.ToolStripMenuItem();
+            this.menuExportDatabaseToXml = new  System.Windows.Forms.ToolStripMenuItem();
+            this.menuImportDatabaseFromXml = new System.Windows.Forms.ToolStripMenuItem();
+            this.pictureBoxPhoto = new System.Windows.Forms.PictureBox();
             this.listBoxTables = new System.Windows.Forms.ListBox();
             this.comboBoxBrands = new System.Windows.Forms.ComboBox();
             this.car_maintenance_costsDataSet = new Labss.Car_maintenance_costsDataSet();
@@ -58,13 +70,18 @@ namespace Labss
             this.buttonDelete = new System.Windows.Forms.Button();
             this.buttonUpdate = new System.Windows.Forms.Button();
             this.menuStrip = new System.Windows.Forms.MenuStrip();
+            this.menuFile = new System.Windows.Forms.ToolStripMenuItem();
+            this.menuSaveProject = new System.Windows.Forms.ToolStripMenuItem();
+            this.menuOpenProject = new System.Windows.Forms.ToolStripMenuItem();
             this.menuTables = new System.Windows.Forms.ToolStripMenuItem();
+            this.menuExportToExcel = new System.Windows.Forms.ToolStripMenuItem();
             this.label1 = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
             this.label3 = new System.Windows.Forms.Label();
             this.label4 = new System.Windows.Forms.Label();
             this.label5 = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridView)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBoxPhoto)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.car_maintenance_costsDataSet)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.автомобилиBindingSource)).BeginInit();
             this.menuStrip.SuspendLayout();
@@ -82,17 +99,24 @@ namespace Labss
             this.dataGridView.TabIndex = 0;
             this.dataGridView.SelectionChanged += new System.EventHandler(this.DataGridView_SelectionChanged);
             // 
+            // pictureBoxPhoto
+            // 
+            this.pictureBoxPhoto.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.pictureBoxPhoto.Location = new System.Drawing.Point(12, 86);
+            this.pictureBoxPhoto.Name = "pictureBoxPhoto";
+            this.pictureBoxPhoto.Size = new System.Drawing.Size(120, 120);
+            this.pictureBoxPhoto.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
+            this.pictureBoxPhoto.TabIndex = 14;
+            this.pictureBoxPhoto.TabStop = false;
+            // 
             // listBoxTables
             // 
             this.listBoxTables.ItemHeight = 16;
-            this.listBoxTables.Location = new System.Drawing.Point(12, 86);
+            this.listBoxTables.Location = new System.Drawing.Point(12, 214);
             this.listBoxTables.Name = "listBoxTables";
-            this.listBoxTables.Size = new System.Drawing.Size(120, 420);
+            this.listBoxTables.Size = new System.Drawing.Size(120, 292);
             this.listBoxTables.TabIndex = 1;
             this.listBoxTables.SelectedIndexChanged += new System.EventHandler(this.listBoxTables_SelectedIndexChanged);
-
-            //this.listBoxTables.DrawItem += new System.Windows.Forms.DrawItemEventHandler(this.GenericListBox_DrawItem);
-            //this.listBoxTables.MeasureItem += new System.Windows.Forms.MeasureItemEventHandler(this.GenericListBox_MeasureItem);
             // 
             // comboBoxBrands
             // 
@@ -202,24 +226,77 @@ namespace Labss
             this.buttonUpdate.Text = "Изменить запись";
             this.buttonUpdate.UseVisualStyleBackColor = true;
             this.buttonUpdate.Click += new System.EventHandler(this.buttonUpdate_Click);
-
             // 
             // menuStrip
             // 
             this.menuStrip.ImageScalingSize = new System.Drawing.Size(20, 20);
             this.menuStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.menuTables});
+            this.menuFile,
+            this.menuTables,
+            this.menuExportToExcel, menuAddPhoto});
             this.menuStrip.Location = new System.Drawing.Point(0, 0);
             this.menuStrip.Name = "menuStrip";
             this.menuStrip.Size = new System.Drawing.Size(900, 28);
             this.menuStrip.TabIndex = 5;
             this.menuStrip.Text = "menuStrip";
+
+
+
+            this.menuAddPhoto.Name = "menuAddPhoto";
+            this.menuAddPhoto.Size = new System.Drawing.Size(129, 24);
+            this.menuAddPhoto.Text = "Добавить фото";
+            this.menuAddPhoto.Click += new System.EventHandler(this.menuAddPhoto_Click);
+            // 
+            // menuFile
+            // 
+            this.menuFile.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.menuSaveProject,
+            this.menuOpenProject,
+            this.menuExportDatabaseToXml,
+            this.menuImportDatabaseFromXml});
+            this.menuFile.Name = "menuFile";
+            this.menuFile.Size = new System.Drawing.Size(59, 24);
+            this.menuFile.Text = "Файл";
+
+
+
+            this.menuExportDatabaseToXml.Name = "menuExportDatabaseToXml";
+            this.menuExportDatabaseToXml.Size = new System.Drawing.Size(218, 26);
+            this.menuExportDatabaseToXml.Text = "Экспортировать в XML";
+
+            this.menuImportDatabaseFromXml.Name = "menuImportDatabaseFromXml";
+            this.menuImportDatabaseFromXml.Size = new System.Drawing.Size(218, 26);
+            this.menuImportDatabaseFromXml.Text = "Импортировать в XML";
+
+            
+
+            // 
+            // menuSaveProject
+            // 
+            this.menuSaveProject.Name = "menuSaveProject";
+            this.menuSaveProject.Size = new System.Drawing.Size(218, 26);
+            this.menuSaveProject.Text = "Сохранить проект";
+            this.menuSaveProject.Click += new System.EventHandler(this.saveToolStripMenuItem_Click);
+            // 
+            // menuOpenProject
+            // 
+            this.menuOpenProject.Name = "menuOpenProject";
+            this.menuOpenProject.Size = new System.Drawing.Size(218, 26);
+            this.menuOpenProject.Text = "Открыть проект";
+            this.menuOpenProject.Click += new System.EventHandler(this.openToolStripMenuItem_Click);
             // 
             // menuTables
             // 
             this.menuTables.Name = "menuTables";
             this.menuTables.Size = new System.Drawing.Size(85, 24);
             this.menuTables.Text = "Таблицы";
+            // 
+            // menuExportToExcel
+            // 
+            this.menuExportToExcel.Name = "menuExportToExcel";
+            this.menuExportToExcel.Size = new System.Drawing.Size(129, 24);
+            this.menuExportToExcel.Text = "Экспорт в Excel";
+            this.menuExportToExcel.Click += new System.EventHandler(this.buttonExportToExcel_Click);
             // 
             // label1
             // 
@@ -272,7 +349,6 @@ namespace Labss
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(900, 546);
             this.Controls.Add(this.label5);
-            
             this.Controls.Add(this.label4);
             this.Controls.Add(this.label3);
             this.Controls.Add(this.label2);
@@ -283,6 +359,7 @@ namespace Labss
             this.Controls.Add(this.menuStrip);
             this.Controls.Add(this.dataGridView);
             this.Controls.Add(this.comboBoxBrands);
+            this.Controls.Add(this.pictureBoxPhoto);
             this.Controls.Add(this.listBoxCosts);
             this.Controls.Add(this.listBoxMiscellaneous);
             this.Controls.Add(this.listBoxInsurance);
@@ -293,8 +370,8 @@ namespace Labss
             this.Name = "Form1";
             this.Text = "Car Maintenance Costs";
             this.Load += new System.EventHandler(this.MainForm_Load);
-            //this.Load += new System.EventHandler(this.Form1_Load);
             ((System.ComponentModel.ISupportInitialize)(this.dataGridView)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBoxPhoto)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.car_maintenance_costsDataSet)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.автомобилиBindingSource)).EndInit();
             this.menuStrip.ResumeLayout(false);
@@ -317,5 +394,6 @@ namespace Labss
         private Label label3;
         private Label label4;
         private Label label5;
+        private ToolStripMenuItem menuExportToExcel;
     }
 }
